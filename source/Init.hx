@@ -75,7 +75,6 @@ class Init extends FlxState {
 		// starts discord rpc unless we're on html5 or switch
 		#if (!html5 || !switch)
 		Discord.initializeRPC(Init.DISCORD_RPC_ID);
-		Discord.changePresence('hi');
 		trace("discord rpc maybe??");
 		#end
 
