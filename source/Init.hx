@@ -3,6 +3,7 @@ package;
 import flixel.FlxG;
 import flixel.FlxState;
 import flixel.input.keyboard.FlxKey;
+import meta.data.dependency.Discord;
 import meta.state.PlayState;
 
 enum SettingTypes
@@ -20,7 +21,7 @@ enum SettingTypes
 class Init extends FlxState {
 
     // API STUFF!
-    private inline static final DISCORD_RPC_ID:String = ""; // change this to ur app id!
+	private inline static final DISCORD_RPC_ID:String = "1480436097795494021"; // change this to ur app id!
 
     // your game settings!
     public static var FORCED = 'forced';
@@ -69,9 +70,15 @@ class Init extends FlxState {
 		loadSettings();
 		loadControls();
 
-		FlxG.fixedTimestep = false; // This ensures that the game is not tied to the FPS
+		FlxG.fixedTimestep = false; // This ensures that the game is not tied to the
 
-		// Main.switchState(this, new TestState());
+		// starts discord rpc unless we're on html5 or switch
+		#if (!html5 || !switch)
+		Discord.initializeRPC(Init.DISCORD_RPC_ID);
+		Discord.changePresence('hi');
+		trace("discord rpc maybe??");
+		#end
+
 		gotoGameState();
     }
 

@@ -4,7 +4,6 @@ import flixel.FlxG;
 import flixel.FlxGame;
 import flixel.FlxState;
 import meta.*;
-// import meta.data.dependency.Discord;
 import openfl.Lib;
 import openfl.display.Sprite;
 
@@ -45,12 +44,6 @@ class Main extends Sprite
 		var game:FlxGame;
 		game = new FlxGame(gameWidth, gameHeight, mainClassState, framerate, framerate, skipSplash);
 		addChild(game); // and create it after!
-
-		// starts discord rpc unless we're on html5 or switch
-		#if (html5 || switch)
-		//Discord.initializeRPC();
-		// Discord.changePresence('');
-		#end
 
 		infoCounter = new InfoOverlay(10, 3, 0xFFFFFF, true);
 		addChild(infoCounter);
