@@ -1,0 +1,241 @@
+package;
+
+import hxp.*;
+import lime.tools.*;
+import sys.FileSystem;
+using StringTools;
+
+@:nullSafety
+class Project extends HXProject {
+    /**
+    // METADATA 
+    **/
+
+    // The version that displays in places (EX: Discord RPC or the Main Menu!)
+    static final VERSION:String = "0.0.1";
+
+    // The window title!
+    static final TITLE:String = "A HaxeFlixel Game";
+
+    // The "company" name!
+    static final COMPANY:String = "dotfla";
+
+    // The executable name!
+    static final EXEC_NAME:String = "game";
+
+    // Where da sauce code at!
+    static final SOURCE_DIR:String = "source";
+
+    // The preloader that the game uses!
+    static final PRELOADER:String = "flixel.system.FlxPreloader"; // low-key a place holder until I do my own lol
+
+    // Do I really gotta explain this one?...
+	static final MAIN_CLASS:String = "Main";
+
+    /**
+    // SWITCH META DATA (That's right baby, this shit has NX support!)
+    **/
+
+    // Nintendo Switch Application ID
+    static final SWITCH_APP_ID:String = ""; // todo
+
+    // Path to the Haxe script run before building the game.
+    static final PREBUILD_HX:String = "source/build/Prebuild.hx"; // low-key taken from Funkin' but we finna have our own shit in it....soon...
+
+    /**
+    // FEATURE FLAGS
+    // Basically build arguments
+    **/
+
+    // `-DFEATURE_DISCORD_RPC`
+    // If enabled, it lets the user compile the game with Discord RPC support.
+    static final FEATURE_DISCORD_RPC:FeatureFlag = "FEATURE_DISCORD_RPC";
+
+    public function new() {
+
+        super();
+
+        flair();
+        configureGame();
+        configureHaxelibs();
+    }
+
+    function flair() {
+        // finna do dis later!
+    }
+
+    function configureGame() {
+        this.meta.title = TITLE;
+		this.meta.version = VERSION;
+		this.meta.company = COMPANY;
+
+
+        this.app.main = MAIN_CLASS;
+		this.app.file = EXEC_NAME;
+		this.app.preloader = PRELOADER;
+
+        this.sources.push(SOURCE_DIR);
+
+        // Tell Lime to run some prebuild and postbuild scripts.
+        this.preBuildCallbacks.push(buildHaxeCLICommand(PREBUILD_HX));
+
+        // Window Config
+        // Set the target FPS.
+        this.window.fps = 60;
+		// Set the window size.
+		this.window.width = 1280;
+		this.window.height = 720;
+		// BG color
+		this.window.background = 0xFF000000;
+
+        this.window.hardware = true;
+		this.window.vsync = false;
+    }
+
+    function configureHaxelibs() {
+        //addHaxelib("lime");
+        //addHaxelib("openfl");
+        addHaxelib("flixel");
+        // TODO: if (isSwitch)
+        addHaxelib("hx_libnx");
+        // TODO: if (FEATURE_DISCORD_RPC)
+        addHaxelib('discord_rpc');
+    }
+
+    // HELPER FUNCS
+    public function addHaxelib(name:String, version:String = ""):Void {
+		this.haxelibs.push(new Haxelib(name, version));
+	}
+
+    public function buildHaxeCLICommand(path:String):CLICommand
+    {
+        return CommandHelper.interpretHaxe(path);
+    }
+
+    public function setHaxedef(name:String, ?value:String):Void
+    {
+        if (value == null) value = "";
+
+        this.haxedefs.set(name, value);
+    }
+
+    public function unsetHaxedef(name:String):Void
+    {
+        this.haxedefs.remove(name);
+    }
+}
+
+/**
+ * An object representing a feature flag, which can be enabled or disabled.
+ * Includes features such as automatic generation of compile defines and inversion.
+ */
+abstract FeatureFlag(String) from String to String
+{
+  public static final INVERSE_PREFIX:String = "NO_";
+
+  public function new(input:String)
+  {
+    this = input;
+  }
+
+  @:from
+  public static function fromString(input:String):FeatureFlag
+  {
+    return new FeatureFlag(input);
+  }
+
+  /**
+   * Enable/disable a feature flag if it is unset, and handle the inverse flag.
+   * Doesn't override a feature flag that was set explicitly.
+   * @param enableByDefault Whether to enable this feature flag if it is unset.
+   */
+  public function apply(project:Project, enableByDefault:Bool = false):Void
+  {
+    // TODO: Name this function better?
+
+    if (isEnabled(project))
+    {
+      // If this flag was already enabled, disable the inverse.
+      getInverse().disable(project, false);
+    }
+    else if (getInverse().isEnabled(project))
+    {
+      // If the inverse flag was already enabled, disable this flag.
+      disable(project, false);
+    }
+    else
+    {
+      if (enableByDefault)
+      {
+        // Enable this flag if it was unset, and disable the inverse.
+        enable(project, true);
+      }
+      else
+      {
+        // Disable this flag if it was unset, and enable the inverse.
+        disable(project, true);
+      }
+    }
+  }
+
+  /**
+   * Enable this feature flag by setting the appropriate compile define.
+   *
+   * @param project The project to modify.
+   * @param andInverse Also disable the feature flag's inverse.
+   */
+  public function enable(project:Project, andInverse:Bool = true)
+  {
+    project.setHaxedef(this, "");
+    if (andInverse)
+    {
+      getInverse().disable(project, false);
+    }
+  }
+
+  /**
+   * Disable this feature flag by removing the appropriate compile define.
+   *
+   * @param project The project to modify.
+   * @param andInverse Also enable the feature flag's inverse.
+   */
+  public function disable(project:Project, andInverse:Bool = true)
+  {
+    project.unsetHaxedef(this);
+    if (andInverse)
+    {
+      getInverse().enable(project, false);
+    }
+  }
+
+  /**
+   * Query if this feature flag is enabled.
+   * @param project The project to query.
+   */
+  public function isEnabled(project:Project):Bool
+  {
+    // Check both Haxedefs and Defines for this flag.
+    return project.haxedefs.exists(this) || project.defines.exists(this);
+  }
+
+  /**
+   * Query if this feature flag's inverse is enabled.
+   */
+  public function isDisabled(project:Project):Bool
+  {
+    return getInverse().isEnabled(project);
+  }
+
+  /**
+   * Return the inverse of this feature flag.
+   * @return A new feature flag that is the inverse of this one.
+   */
+  public function getInverse():FeatureFlag
+  {
+    if (this.startsWith(INVERSE_PREFIX))
+    {
+      return this.substring(INVERSE_PREFIX.length);
+    }
+    return INVERSE_PREFIX + this;
+  }
+}

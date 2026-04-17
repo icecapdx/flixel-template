@@ -218,15 +218,14 @@ class Util {
      * Return the contents of a JSON file in the `assets` folder.
      * @param   jsonPath            Path to the json.
      */
-     static public function getJson(filePath:String):String {
+	 static public function getJson(filePath:String) {
         #if web
-        if (Assets.exists('assets/charts/' + filePath + '.json')) {
-            return Assets.getText('assets/charts/' + filePath + '.json');
+        if (Assets.exists('assets/$filePath.json')) {
+            return Json.parse(Assets.getText('assets/$filePath.json'));
         }
         #else
-        if (sys.FileSystem.exists(Sys.getCwd() + '/assets/charts/' + filePath + '.json')) {
-            return sys.io.File.getContent(Sys.getCwd() + '/assets/charts/' + filePath + '.json');
-        }
+        if (sys.FileSystem.exists(Sys.getCwd() + 'assets/$filePath.json'))
+            return Json.parse(sys.io.File.getContent(Sys.getCwd() + 'assets/$filePath.json'));
         #end
     
         return null;
