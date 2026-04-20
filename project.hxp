@@ -52,6 +52,10 @@ class Project extends HXProject {
     // If enabled, it lets the user compile the game with Discord RPC support.
     static final FEATURE_DISCORD_RPC:FeatureFlag = "FEATURE_DISCORD_RPC";
 
+    // `-DFEATURE_DEBUG_FUNCTIONS`
+    // If enabled, it lets the user compile the game with debug functions enabled.
+    static final FEATURE_DEBUG_FUNCTIONS:FeatureFlag = "FEATURE_DEBUG_FUNCTIONS";
+
     public function new() {
 
         super();
@@ -61,6 +65,7 @@ class Project extends HXProject {
         configureTarget();
         configureFeatureFlags();
         configureHaxelibs();
+        this.preBuildCallbacks.push(buildHaxeCLICommand(PREBUILD_HX));
     }
 
     function flair() {
@@ -143,11 +148,35 @@ class Project extends HXProject {
 
     function configureFeatureFlags() {
         FEATURE_DISCORD_RPC.apply(this, isDesktop());
+        FEATURE_DEBUG_FUNCTIONS.apply(this, false);
     }
 
     public function buildHaxeCLICommand(path:String):CLICommand
     {
-        return CommandHelper.interpretHaxe(path);
+        var args:Array<String> = [];
+        var featureDefines = new Map<String, String>();
+        for (name in defines.keys())
+        {
+            if (name.startsWith("FEATURE_"))
+                featureDefines.set(name, Std.string(defines.get(name)));
+        }
+        for (name in haxedefs.keys())
+        {
+            if (name.startsWith("FEATURE_"))
+                featureDefines.set(name, Std.string(haxedefs.get(name)));
+        }
+        for (name => value in featureDefines)
+        {
+            args.push("-D");
+            if (value == null || value == "" || value == "null")
+                args.push(name);
+            else
+                args.push(name + "=" + value);
+        }
+        args.push("-main");
+        args.push(path);
+        args.push("--interp");
+        return new CLICommand("haxe", args);
     }
 
     public function setHaxedef(name:String, ?value:String):Void
@@ -155,6 +184,16 @@ class Project extends HXProject {
         if (value == null) value = "";
 
         this.haxedefs.set(name, value);
+    }
+
+    public function getHaxedef(name:String):Null<Dynamic>
+    {
+      return this.haxedefs.get(name);
+    }
+
+    public function hasDefine(project:Project, name:String):Bool
+    {
+        return project.defines.exists(name);
     }
 
     public function unsetHaxedef(name:String):Void
@@ -317,7 +356,7 @@ abstract FeatureFlag(String) from String to String
   public function isEnabled(project:Project):Bool
   {
     // Check both Haxedefs and Defines for this flag.
-    return project.haxedefs.exists(this) || project.defines.exists(this);
+    return project.hasDefine(this);
   }
 
   /**
