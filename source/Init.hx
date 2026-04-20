@@ -3,7 +3,9 @@ package;
 import flixel.FlxG;
 import flixel.FlxState;
 import flixel.input.keyboard.FlxKey;
+#if FEATURE_DISCORD_RPC
 import meta.data.dependency.Discord;
+#end
 import meta.state.PlayState;
 
 enum SettingTypes
@@ -72,8 +74,8 @@ class Init extends FlxState {
 
 		FlxG.fixedTimestep = false; // This ensures that the game is not tied to the
 
-		// starts discord rpc unless we're on html5 or switch
-		#if (!html5 || !switch)
+		// starts discord rpc if we build with the FEATURE_DISCORD_RPC flag and if we're on desktop!
+		#if FEATURE_DISCORD_RPC
 		Discord.initializeRPC(Init.DISCORD_RPC_ID);
 		trace("discord rpc maybe??");
 		#end

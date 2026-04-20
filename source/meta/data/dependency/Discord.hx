@@ -1,13 +1,11 @@
 package meta.data.dependency;
 
-#if (!html5 || !switch)
+#if FEATURE_DISCORD_RPC
 import discord_rpc.DiscordRpc;
-#end
 import lime.app.Application;
 
 class Discord
 {
-	#if (!html5 || !switch)
 	public static function initializeRPC(rpcID:String)
 	{
 		DiscordRpc.start({
@@ -63,5 +61,5 @@ class Discord
 	{
 		DiscordRpc.shutdown();
 	}
-	#end
 }
+#end
